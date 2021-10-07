@@ -43,13 +43,17 @@ def avg_usage(custID):
                     f'Suspected intrusion on day {list(avg_times_dict.keys())[list(avg_times_dict.values()).index(i)]} with value {i}')
     return avg_times_dict
 
-for customer in range(1,2):
-    new_thread = threading.Thread(target=avg_usage, args=customer)
-    new_thread.start()
 
 
 def main():
-    print(avg_usage(1))
+    threads = []
+    for customer in range(1, 2):
+        new_thread = threading.Thread(target=avg_usage, args=[customer])
+        new_thread.start()
+        threads.append(new_thread)
+    for t in threads:
+        t.join()
+#     print(avg_usage(1))
 
 
 if __name__ == "__main__":
