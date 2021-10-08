@@ -23,7 +23,7 @@ def avg_usage(custID):
     avg_times = []
     avg_times_dict = {}
     margin = 10 # The margin by how high can the average be before it is suspected as an intrusion.
-    for day in range(1, 7):
+    for day in range(1, 8):
         name = f'Homework1/cloud/cust{custID}-{day}.txt'
         with open(name, "r") as f:
             visits = f.readlines()
@@ -48,7 +48,7 @@ def avg_usage(custID):
 
 def main():
     threads = []
-    for customer in range(1, 3):
+    for customer in range(1, 2):
         new_thread = threading.Thread(target=avg_usage, args=[customer])
         new_thread.start()
         threads.append(new_thread)
