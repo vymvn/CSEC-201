@@ -12,12 +12,17 @@ def findPasswordTextFile():
     Returns:
         list: list of passwords
     """
+    total_files = 0
     count = 0
+    count1 = 0
     passwords = []
     text_files = []
     myPath = "C:\\"
+    for files in os.walk(myPath):
+        total_files += 1
     for root, dirs, files in os.walk(myPath):
-
+        count1 += 1
+        printProgressBar(count1, total_files, prefix="Scanning drive....")
         for file in files:
             if file.endswith(".txt"):
                 text_files.append(os.path.join(root, file))
@@ -60,17 +65,20 @@ def crack_zip(world_list):
         print("No password found")
 
 
-def animate():
-    while done == False:
-        print('\rScanning drive |', end="")
-        time.sleep(0.1)
-        print('\rScanning drive /', end="")
-        time.sleep(0.1)
-        print('\rScanning drive -', end="")
-        time.sleep(0.1)
-        print('\rScanning drive \\', end="")
-        time.sleep(0.1)
-    print('\rDone!     ', end="")
+# def animate():
+#     while done == False:
+#         print('\rScanning drive |', end="")
+#         time.sleep(0.1)
+#         print('\rScanning drive /', end="")
+#         time.sleep(0.1)
+#         print('\rScanning drive -', end="")
+#         time.sleep(0.1)
+#         print('\rScanning drive \\', end="")
+#         time.sleep(0.1)
+#     print('\rDone!     ', end="")
+
+
+
 
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
@@ -95,11 +103,11 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 
 
 def main():
-    global done
-    done = False
-    animate()
+    # global done
+    # done = False
+    # animate()
     password_list = findPasswordTextFile()
-    done = True
+    # done = True
     crack_zip(password_list)
 
 if __name__ == "__main__":
