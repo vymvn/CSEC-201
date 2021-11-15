@@ -58,7 +58,9 @@ def acceptConnections():
 
 
 def main():
-    initServer("localhost", 6666)
+    HOST = socket.gethostbyname(socket.gethostname())
+    print(HOST)
+    initServer(HOST, 6666)
     acceptConnections()
     
 if __name__ == "__main__":
