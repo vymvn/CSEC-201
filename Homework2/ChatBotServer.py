@@ -13,16 +13,24 @@ class clientThread(threading.Thread):
     
     def run(self):
         # Set-up phase 
-        data_string = self.socket.recv(1024) # receive starting packet
+        starting_packet = process_packet_string(self.socket.recv(1024))
         print(f"Received starting packet from {self.address}")
-        starting_packet = data_string.decode("utf-8").split()
-        print(starting_packet)
+        print(starting_packet) ## DELETE THIS LINE
         if int(starting_packet[3]) == 1:
-            data_string = self.socket.recv(1024) # receive encryption packet
+            encryption_packet = process_packet_string(self.socket.recv(1024))
             print(f"Received encryption packet from {self.address}")
-            encryption_packet = data_string.decode("utf-8").split()
-            print(encryption_packet)
-        
+            print(encryption_packet) ## DELETE THIS LINE 
+            if encryption_packet[1].upper() == "DES":
+                sessionKey = "KEY" ## UPDATE TO GIVE ACTUAL KEY
+                SKpacket = f"SK, {sessionKey}"
+                self.socket.send(SKpacket.encode("utf-8"))
+                print(f"Session key sent to {self.address}")
+            elif encryption_packet[1].lower().strip(",") == "auth":
+                username = encryption_packet[2].split(":")[0].strip()
+                password = encryption_packet[2].split(":")[1].strip()
+                print(f"[{self.address}] username: {username} / password: {password}") ## DELETE THIS LINE
+        CCpacket = "CC"
+        self.socket.send(CCpacket.encode("utf-8"))
 
         
             
@@ -46,6 +54,14 @@ def acceptConnections():
         print(f"Got a connection from {address}")
         newClientThread = clientThread(clientSocket, address)
         newClientThread.start()
+
+
+def process_packet_string(packet_string):
+    temp = packet_string.decode().split()
+    packet = []
+    for i in temp:
+        packet.append(i.strip(","))
+    return packet
 
 
 def main():

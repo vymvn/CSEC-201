@@ -23,6 +23,7 @@ def initConnection(HOST, PORT):
 
 # Set-up phase
 def setUpPhase():
+    print("Connection established!")
     # asking user for encryption type they want to connect with
     correct = False
     while not correct:
@@ -37,21 +38,25 @@ def setUpPhase():
     start_packet = f"SS, {PROTOCOL}, {VERSION}, {encryption_type}"
     s.send(start_packet.encode("utf-8"))
     if encryption_type == 1:
-        algo = input("Please choose encryption algorithm (DES/Auth): : ")
-        if algo.upper() == "DES":
-            pub_key = input("Please provide your public key: ")
-            encryption_packet = f"EC, DES, {pub_key}"
-            s.send(encryption_packet.encode("utf-8"))
-            SKpacket_string = s.recv(1024)
-            SKpacket = SKpacket_string.decode().split()
-            if SKpacket[0] == "SK":
-                SK = SKpacket[1]
-                print(f"Session key is: {SK}")
-        elif algo.lower() == "auth":
-            username = input("Username: ")
-            password = input("Password: ")
-            encryption_packet = f"EC, {algo.lower()}, {(username, password)}"
-            s.send(encryption_packet.encode("utf-8"))
+        while True:
+            algo = input("Please choose encryption algorithm (DES/Auth)\n>> ")
+            if algo.upper() == "DES":
+                pub_key = input("Please provide your public key\n>> ")
+                encryption_packet = f"EC, DES, {pub_key}"
+                s.send(encryption_packet.encode("utf-8"))
+                SKpacket = process_packet_string(s.recv(1024))
+                if SKpacket[0] == "SK":
+                    SK = SKpacket[1]
+                    print(f"Session key is:\n{SK}")
+                break
+            elif algo.lower() == "auth":
+                username = input("Username: ")
+                password = input("Password: ")
+                encryption_packet = f"EC, {algo.lower()}, {username}:{password}"
+                s.send(encryption_packet.encode("utf-8"))
+                break
+            else:
+                print("[INVALID INPUT] Please try again..")
     confirmation_packet = process_packet_string(s.recv(1024))
     if confirmation_packet[0] == "CC":   
         print("Connected successfully!")
@@ -62,7 +67,10 @@ def setUpPhase():
 
 
 def process_packet_string(packet_string):
-    packet = packet_string.decode().split()
+    temp = packet_string.decode().split()
+    packet = []
+    for i in temp:
+        packet.append(i.strip(","))
     return packet
 
 
