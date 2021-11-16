@@ -3,10 +3,7 @@ import socket, threading
 
 
 class clientThread(threading.Thread):
-    """[summary]
-
-    Args:
-        threading ([type]): [description]
+    """ Thread that handles a single client
     """
     def __init__(self, socket, address):
         threading.Thread.__init__(self)
@@ -16,25 +13,19 @@ class clientThread(threading.Thread):
     
     def run(self):
         # Set-up phase 
-        data_string = self.socket.recv(1024)
+        data_string = self.socket.recv(1024) # receive starting packet
         print(f"Received starting packet from {self.address}")
-        starting_packet = process_data_string(data_string.decode("utf-8"))
-        if starting_packet["Encryption"] == 1:
-            self.socket.send("Give me encryption packet".encode("utf-8"))
+        starting_packet = data_string.decode("utf-8").split()
         print(starting_packet)
+        if int(starting_packet[3]) == 1:
+            data_string = self.socket.recv(1024) # receive encryption packet
+            print(f"Received encryption packet from {self.address}")
+            encryption_packet = data_string.decode("utf-8").split()
+            print(encryption_packet)
+        
+
+        
             
-
-
-def process_data_string(data_string) -> dict:
-    packet = {}
-    data = data_string.split()
-    packet["Packet type"] = data[0]
-    packet["Protocol name"] = data[1]
-    packet["Version"] = data[2]
-    packet["Encryption"] = data[3]
-    return packet
-
-
 def initServer(HOST, PORT):
     """ initializes server socket to accept connections
 
@@ -59,9 +50,8 @@ def acceptConnections():
 
 def main():
     HOST = socket.gethostbyname(socket.gethostname())
-    print(HOST)
-    initServer(HOST, 6666)
+    initServer("localhost", 6666)
     acceptConnections()
     
 if __name__ == "__main__":
-    main()
+    main() 
