@@ -1,5 +1,5 @@
 import socket
-from Crypto.PublicKey import RSA
+import rsa
 
 # ChatBot information
 VERSION = "v1.0"
@@ -44,13 +44,15 @@ def setUpPhase():
         while True:
             algo = input("Please choose encryption algorithm (DES/Auth)\n>> ")
             if algo.upper() == "DES":
-                pub_key = f"My public key" ## UPDATE TO GIVE ACTUAL PUBLIC KEY
-                encryption_packet = f"EC, DES, {pub_key}"
-                s.send(encryption_packet.encode("utf-8"))
-                SKpacket = process_packet_string(s.recv(1024)) ## DECRYPT WITH PRIVATE KEY
+                (pubKey, privKey) = rsa.newkeys(2048)
+                pubKey_pkcs1 = pubKey.save_pkcs1(format='DER')
+                print(pubKey_pkcs1)
+                encryption_packet = f"EC, DES, {pubKey_pkcs1}"
+                s.send(encryption_packet.encode())
+                SKpacket = process_packet_string(s.recv(1024))
                 if SKpacket[0] == "SK":
-                    SK = SKpacket[1]
-                    print(f"Session key is:\n{SK}")
+                    sessionKey = rsa.decrypt(SKpacket[1], privKey)
+                    print(f"Session key is:\n{sessionKey}")
                 break
             elif algo.lower() == "auth":
                 username = input("Username: ")
@@ -92,9 +94,7 @@ def operation_phase():
                 if reply[0] == "EE":
                     if reply[1] == "InputError":
                         print(reply[2])
-                elif reply[0] == "GR":
-                    print(reply[1])
-                elif reply[0] == "IR":
+                elif reply[0] == "GR" or reply[0] == "IR" or reply[0] == "LR" or reply[0] == "TR" or reply[0] == "RR" or reply[0] == "PR":
                     print(reply[1])
                     
 
