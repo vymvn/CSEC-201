@@ -1,6 +1,6 @@
 import socket, threading
 from Crypto.Cipher import DES
-from Crypto.PublicKey import RSA
+import rsa
 import random, string
 from googlesearch import search
 
@@ -19,21 +19,23 @@ class clientThread(threading.Thread):
         starting_packet = process_packet_string(self.socket.recv(1024))
         print(f"Received starting packet from {self.address}")
         if int(starting_packet[3]) == 1:
-            encryption_packet = process_packet_string(self.socket.recv(1024))
+            encryption_packet = process_packet_string(self.socket.recv(2048))
             print(f"Received encryption packet from {self.address}")
             if encryption_packet[1].upper() == "DES":
                 # Making and encrypting session key
                 
-                # pubKey = encryption_packet[2]
-                # print(pubKey)
-                # random_string = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)).encode("utf-8")    
-                # cipher = DES.new(random_string, DES.MODE_OFB)
-                # print(random_string)
-                # sessionKey = cipher.iv + cipher.encrypt(random_string)
-                # print(sessionKey)
+                pubKey_pkcs1 = ",".join(encryption_packet[2:],)
+                print(pubKey_pkcs1)
+                pubKey = rsa.key.PublicKey.load_pkcs1(pubKey_pkcs1.encode(), format='DER')
+                # generating a random 8 byte string as the key
+                sessionKey = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)).encode("utf-8")
+                #encrypting session key with public key
+                encryptedSK = rsa.encrypt(sessionKey, pubKey)   
+                # cipher = DES.new(key, DES.MODE_OFB) # encrypting messages with key
+                # encryptedMsg = cipher.iv + cipher.encrypt(random_string)
+                print(sessionKey)
                 
-                sessionKey = "KEY" ## UPDATE TO GIVE ACTUAL KEY
-                SKpacket = f"SK, {sessionKey}"
+                SKpacket = f"SK, {encryptedSK}"
                 self.socket.send(SKpacket.encode("utf-8"))
                 print(f"Session key sent to {self.address}")
                 
@@ -51,6 +53,7 @@ class clientThread(threading.Thread):
             # processing the message and choosing and appropriate response packet
             received = process_packet_string(self.socket.recv(2048))
             if received[0] == "ED":
+                # Closing Phase
                 print(f"Closing packet received from {self.address}")
                 break
             elif received[0] == "IN":
@@ -67,13 +70,28 @@ class clientThread(threading.Thread):
                     # query = received[1]
                     # result = search(query, tld='com', lang='en', num=10, start=0, stop=None, pause=2.0) # This is for google packet
                     self.socket.send(f"IR, it is...".encode())
+                
+                elif "where" in received[1]:
+                    self.socket.send(f"LR, well...did you try google maps? ".encode())
+
+                elif "when" in received[1]:
+                    self.socket.send(f"TR, Around 5 mins after too late ".encode())
+
+                elif "search" in received[1]:
+                    query = received[1].lstrip('search')
+                    result = search(query,tld='com', lang='en', num=10, start=0, stop=None, pause=2.0)
+                    self.socket.send(f"RR, {result}".encode())
+
+                elif "permission" in received[1]:
+                    self.socket.send(f"PR, Permission Granted, Godspeed ")
+                    
                 else:
                     self.socket.send(f"EE, InputError, Sorry i did not get that. Ask me something or type \"bye\" to quit.".encode())
+        # Disconnecting after receiving closing packet
         self.socket.close()
         print(f"{self.address} Disconnected")
             
 
-        
             
 def initServer(HOST, PORT):
     """ initializes server socket to accept connections
@@ -101,7 +119,7 @@ def process_packet_string(packet_string) -> list:
     temp = packet_string.decode().split(",")
     packet = []
     for i in temp:
-        packet.append(i.strip())
+        packet.append(i)
     return packet
 
 
