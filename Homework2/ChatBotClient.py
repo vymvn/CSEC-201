@@ -1,4 +1,5 @@
 import socket
+from Crypto.PublicKey import RSA
 
 # ChatBot information
 VERSION = "v1.0"
@@ -23,6 +24,8 @@ def initConnection(HOST, PORT):
 
 # Set-up phase
 def setUpPhase():
+    """ Setting up connection and encryption between client and server
+    """
     print("Connection established!")
     # asking user for encryption type they want to connect with
     correct = False
@@ -41,7 +44,9 @@ def setUpPhase():
         while True:
             algo = input("Please choose encryption algorithm (DES/Auth)\n>> ")
             if algo.upper() == "DES":
-                pub_key = input("Please provide your public key\n>> ")
+                keyPair = RSA.generate(bits=1024)
+                # pub_key = input("Please provide your public key\n>> ")
+                pub_key = f"{hex(keyPair.e)}"
                 encryption_packet = f"EC, DES, {pub_key}"
                 s.send(encryption_packet.encode("utf-8"))
                 SKpacket = process_packet_string(s.recv(1024))
@@ -66,17 +71,47 @@ def setUpPhase():
         print("Unknown error")
 
 
-def process_packet_string(packet_string):
-    temp = packet_string.decode().split()
+def operation_phase():
+    # getting user messages 
+    while True:
+        msg = input(">> ")
+        if msg.lower() == "bye":
+            confirm = input("Are you sure you want to quit? (y/n)\n>> ")
+            if confirm.lower() == 'y' or confirm.lower() == "yes":
+                print("Goodbye!")
+                EDpacket = f"ED"
+                s.send(EDpacket.encode())
+                break
+            elif confirm.lower() == 'n' or confirm.lower() == "no":
+                pass
+            else:
+                print("[INVALID INPUT] Please try again..")   
+        else:
+            INpacket = f"IN, {msg}"
+            s.send(INpacket.encode())
+            reply = process_packet_string(s.recv(2048))
+            if reply[0] == "EE":
+                if reply[1] == "InputError":
+                    print(reply[2])
+            elif reply[0] == "GR":
+                print(reply[1])
+            elif reply[0] == "IR":
+                print(reply[1])
+                
+
+
+def process_packet_string(packet_string) -> list:
+    temp = packet_string.decode().split(",")
     packet = []
     for i in temp:
-        packet.append(i.strip(","))
+        packet.append(i.strip())
     return packet
 
 
 def main():
     initConnection("localhost", 6666)
     setUpPhase()
+    operation_phase()
     
 if __name__ == "__main__":
     main()
