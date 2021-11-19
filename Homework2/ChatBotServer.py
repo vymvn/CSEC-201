@@ -63,7 +63,6 @@ class clientThread(threading.Thread):
                     else:
                         response = GRrespones[random.randint(0, 2)]
                     self.socket.send(f"GR, {response}".encode())
-                    
                 elif "what" in received[1]:
                     # query = received[1]
                     # result = search(query, tld='com', lang='en', num=10, start=0, stop=None, pause=2.0) # This is for google packet
@@ -107,7 +106,6 @@ def process_packet_string(packet_string) -> list:
 
 
 def main():
-    HOST = socket.gethostbyname(socket.gethostname())
     initServer("localhost", 6666)
     acceptConnections()
     

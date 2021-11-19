@@ -44,12 +44,10 @@ def setUpPhase():
         while True:
             algo = input("Please choose encryption algorithm (DES/Auth)\n>> ")
             if algo.upper() == "DES":
-                keyPair = RSA.generate(bits=1024)
-                # pub_key = input("Please provide your public key\n>> ")
-                pub_key = f"{hex(keyPair.e)}"
+                pub_key = f"My public key" ## UPDATE TO GIVE ACTUAL PUBLIC KEY
                 encryption_packet = f"EC, DES, {pub_key}"
                 s.send(encryption_packet.encode("utf-8"))
-                SKpacket = process_packet_string(s.recv(1024))
+                SKpacket = process_packet_string(s.recv(1024)) ## DECRYPT WITH PRIVATE KEY
                 if SKpacket[0] == "SK":
                     SK = SKpacket[1]
                     print(f"Session key is:\n{SK}")
@@ -66,7 +64,7 @@ def setUpPhase():
     if confirmation_packet[0] == "CC":   
         print("Connected successfully!")
     elif confirmation_packet[0] == "EE":
-        print("Error connecting")
+        print("An error occurred")
     else:
         print("Unknown error")
 
@@ -75,29 +73,30 @@ def operation_phase():
     # getting user messages 
     while True:
         msg = input(">> ")
-        if msg.lower() == "bye":
-            confirm = input("Are you sure you want to quit? (y/n)\n>> ")
-            if confirm.lower() == 'y' or confirm.lower() == "yes":
-                print("Goodbye!")
-                EDpacket = f"ED"
-                s.send(EDpacket.encode())
-                break
-            elif confirm.lower() == 'n' or confirm.lower() == "no":
-                pass
+        if msg: # Checking for empty input
+            if msg.lower() == "bye":
+                confirm = input("Are you sure you want to quit? (y/n)\n>> ")
+                if confirm.lower() == 'y' or confirm.lower() == "yes":
+                    print("Goodbye!")
+                    EDpacket = f"ED"
+                    s.send(EDpacket.encode())
+                    break
+                elif confirm.lower() == 'n' or confirm.lower() == "no":
+                    pass
+                else:
+                    print("[INVALID INPUT] Please try again..")   
             else:
-                print("[INVALID INPUT] Please try again..")   
-        else:
-            INpacket = f"IN, {msg}"
-            s.send(INpacket.encode())
-            reply = process_packet_string(s.recv(2048))
-            if reply[0] == "EE":
-                if reply[1] == "InputError":
-                    print(reply[2])
-            elif reply[0] == "GR":
-                print(reply[1])
-            elif reply[0] == "IR":
-                print(reply[1])
-                
+                INpacket = f"IN, {msg}"
+                s.send(INpacket.encode())
+                reply = process_packet_string(s.recv(2048))
+                if reply[0] == "EE":
+                    if reply[1] == "InputError":
+                        print(reply[2])
+                elif reply[0] == "GR":
+                    print(reply[1])
+                elif reply[0] == "IR":
+                    print(reply[1])
+                    
 
 
 def process_packet_string(packet_string) -> list:
@@ -112,6 +111,7 @@ def main():
     initConnection("localhost", 6666)
     setUpPhase()
     operation_phase()
+    s.close()
     
 if __name__ == "__main__":
     main()
