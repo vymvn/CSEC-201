@@ -1,4 +1,5 @@
 import socket
+from Crypto.Cipher import DES
 import rsa
 
 # ChatBot information
@@ -38,7 +39,7 @@ def setUpPhase():
                 raise Exception
         except:
             print("[INVALID INPUT] Please try again..")
-    start_packet = f"SS, {PROTOCOL}, {VERSION}, {encryption_type}"
+    start_packet = f"SS,{PROTOCOL},{VERSION},{encryption_type}"
     s.send(start_packet.encode("utf-8"))
     if encryption_type == 1:
         while True:
@@ -46,25 +47,29 @@ def setUpPhase():
             if algo.upper() == "DES":
                 (pubKey, privKey) = rsa.newkeys(2048)
                 pubKey_pkcs1 = pubKey.save_pkcs1(format='DER')
-                print(pubKey_pkcs1)
-                encryption_packet = f"EC, DES, {pubKey_pkcs1}"
-                s.send(encryption_packet.encode())
+                encryption_packet1 = f"EC,DES"
+                encryption_packet2 = pubKey_pkcs1  # Sending packet in 2 parts so the key is received as raw bytes
+                s.send(encryption_packet1.encode())
+                s.send(encryption_packet2)
                 SKpacket = process_packet_string(s.recv(1024))
                 if SKpacket[0] == "SK":
-                    sessionKey = rsa.decrypt(SKpacket[1], privKey)
-                    print(f"Session key is:\n{sessionKey}")
+                    SK = s.recv(1024)
+                    sessionKey = rsa.decrypt(SK, privKey)
+                    print("Session key received successfully!")
+                    global cipher
+                    cipher = DES.new(sessionKey, DES.MODE_OFB) # the encryption cipher
                 break
             elif algo.lower() == "auth":
                 username = input("Username: ")
                 password = input("Password: ")
-                encryption_packet = f"EC, {algo.lower()}, {username}:{password}"
+                encryption_packet = f"EC,{algo.lower()},{username}:{password}"
                 s.send(encryption_packet.encode("utf-8"))
                 break
             else:
                 print("[INVALID INPUT] Please try again..")
     confirmation_packet = process_packet_string(s.recv(1024))
     if confirmation_packet[0] == "CC":   
-        print("Connected successfully!")
+        print(f"Welcome to ChatBot {VERSION}")
     elif confirmation_packet[0] == "EE":
         print("An error occurred")
     else:
@@ -75,8 +80,9 @@ def operation_phase():
     # getting user messages 
     while True:
         msg = input(">> ")
+        encryptedMsg = cipher.iv + cipher.encrypt(msg.encode())
         if msg: # Checking for empty input
-            if msg.lower() == "bye":
+            if msg.lower() == "end":
                 confirm = input("Are you sure you want to quit? (y/n)\n>> ")
                 if confirm.lower() == 'y' or confirm.lower() == "yes":
                     print("Goodbye!")
@@ -88,14 +94,14 @@ def operation_phase():
                 else:
                     print("[INVALID INPUT] Please try again..")   
             else:
-                INpacket = f"IN, {msg}"
+                INpacket = f"IN,{encryptedMsg}"
                 s.send(INpacket.encode())
-                reply = process_packet_string(s.recv(2048))
-                if reply[0] == "EE":
-                    if reply[1] == "InputError":
-                        print(reply[2])
-                elif reply[0] == "GR" or reply[0] == "IR" or reply[0] == "LR" or reply[0] == "TR" or reply[0] == "RR" or reply[0] == "PR":
-                    print(reply[1])
+                decryptedReply = cipher.iv + cipher.decrypt(process_packet_string(s.recv(2048)))
+                if decryptedReply[0] == "EE":
+                    if decryptedReply[1] == "InputError":
+                        print(decryptedReply[2])
+                elif decryptedReply[0] == "GR" or decryptedReply[0] == "IR" or decryptedReply[0] == "LR" or decryptedReply[0] == "TR" or decryptedReply[0] == "RR" or decryptedReply[0] == "PR":
+                    print(decryptedReply[1])
                     
 
 

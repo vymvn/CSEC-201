@@ -14,6 +14,7 @@ class clientThread(threading.Thread):
         self.address = address
     
     
+    
     def run(self):
         ### Set-up phase ###
         starting_packet = process_packet_string(self.socket.recv(1024))
@@ -23,20 +24,18 @@ class clientThread(threading.Thread):
             print(f"Received encryption packet from {self.address}")
             if encryption_packet[1].upper() == "DES":
                 # Making and encrypting session key
-                
-                pubKey_pkcs1 = ",".join(encryption_packet[2:],)
-                print(pubKey_pkcs1)
-                pubKey = rsa.key.PublicKey.load_pkcs1(pubKey_pkcs1.encode(), format='DER')
-                # generating a random 8 byte string as the key
+                pubKey_pkcs1 = self.socket.recv(2048) # Receiving public key 
+                pubKey = rsa.key.PublicKey.load_pkcs1(pubKey_pkcs1, format='DER')
+                # generating a random 8 byte string as the session key
                 sessionKey = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)).encode("utf-8")
                 #encrypting session key with public key
                 encryptedSK = rsa.encrypt(sessionKey, pubKey)   
-                # cipher = DES.new(key, DES.MODE_OFB) # encrypting messages with key
-                # encryptedMsg = cipher.iv + cipher.encrypt(random_string)
-                print(sessionKey)
-                
-                SKpacket = f"SK, {encryptedSK}"
-                self.socket.send(SKpacket.encode("utf-8"))
+                cipher = DES.new(sessionKey, DES.MODE_OFB) # the encryption cipher
+                # encryptedMsg = cipher.iv + cipher.encrypt("test".encode())
+                SKpacket1 = f"SK"
+                SKpacket2 = encryptedSK
+                self.socket.send(SKpacket1.encode("utf-8"))
+                self.socket.send(SKpacket2) # Sending packet in 2 parts so the key is received as raw bytes
                 print(f"Session key sent to {self.address}")
                 
             elif encryption_packet[1].lower().strip(",") == "auth":
@@ -121,6 +120,8 @@ def process_packet_string(packet_string) -> list:
     for i in temp:
         packet.append(i)
     return packet
+
+
 
 
 def main():
