@@ -1,5 +1,7 @@
 import socket
+import string
 from Crypto.Cipher import DES
+from Crypto.Util.Padding import pad, unpad
 import rsa
 
 # ChatBot information
@@ -43,10 +45,11 @@ def setUpPhase():
     s.send(start_packet.encode("utf-8"))
     if encryption_type == 1:
         while True:
+            global algo
             algo = input("Please choose encryption algorithm (DES/Auth)\n>> ")
             if algo.upper() == "DES":
                 (pubKey, privKey) = rsa.newkeys(2048)
-                pubKey_pkcs1 = pubKey.save_pkcs1(format='DER')
+                pubKey_pkcs1 = pubKey.save_pkcs1(format='PEM')
                 encryption_packet1 = f"EC,DES"
                 encryption_packet2 = pubKey_pkcs1  # Sending packet in 2 parts so the key is received as raw bytes
                 s.send(encryption_packet1.encode())
@@ -54,10 +57,9 @@ def setUpPhase():
                 SKpacket = process_packet_string(s.recv(1024))
                 if SKpacket[0] == "SK":
                     SK = s.recv(1024)
+                    global sessionKey
                     sessionKey = rsa.decrypt(SK, privKey)
                     print("Session key received successfully!")
-                    global cipher
-                    cipher = DES.new(sessionKey, DES.MODE_OFB) # the encryption cipher
                 break
             elif algo.lower() == "auth":
                 username = input("Username: ")
@@ -70,17 +72,54 @@ def setUpPhase():
     confirmation_packet = process_packet_string(s.recv(1024))
     if confirmation_packet[0] == "CC":   
         print(f"Welcome to ChatBot {VERSION}")
+        if algo.upper() == "DES":
+            encrypted_operation_phase() # starting encrypted operation phase
+        else:
+            operation_phase() # starting operation phase
     elif confirmation_packet[0] == "EE":
-        print("An error occurred")
+        print(confirmation_packet[2])
     else:
         print("Unknown error")
 
+
+def encrypted_operation_phase():
+    """ main loop that sends and receives encrypted packets
+    """
+    while True:
+        msg = input(">> ") # getting users input
+        if msg: # Checking for empty input
+            if msg.lower() == "end": 
+                ## closing phase ##
+                confirm = input("Are you sure you want to quit? (y/n)\n>> ")
+                if confirm.lower() == 'y' or confirm.lower() == "yes":
+                    print("Goodbye!")
+                    EDpacket = f"ED"
+                    s.send(EDpacket.encode())
+                    break
+                elif confirm.lower() == 'n' or confirm.lower() == "no":
+                    pass
+                else:
+                    print("[INVALID INPUT] Please try again..")   
+                    
+            else:
+                INpacket = f"IN,{msg}" # making packet
+                encryptedPacket, iv = encryptMsg(INpacket, sessionKey) # encrypting packet
+                s.send(encryptedPacket) # sending encrypted packet
+                s.send(iv) # sending initialization vector needed for decrypting 
+                encryptedReply = s.recv(1024)
+                iv = s.recv(100)
+                decryptedReply = decryptMsg(encryptedReply, sessionKey, iv)
+                responsePacket = process_packet_string(decryptedReply)
+                if responsePacket[0] == "EE":
+                    if responsePacket[1] == "InputError":
+                        print(responsePacket[2])
+                elif responsePacket[0] == "GR" or responsePacket[0] == "IR" or responsePacket[0] == "LR" or responsePacket[0] == "TR" or responsePacket[0] == "RR" or responsePacket[0] == "PR":
+                    print(responsePacket[1])
 
 def operation_phase():
     # getting user messages 
     while True:
         msg = input(">> ")
-        encryptedMsg = cipher.iv + cipher.encrypt(msg.encode())
         if msg: # Checking for empty input
             if msg.lower() == "end":
                 confirm = input("Are you sure you want to quit? (y/n)\n>> ")
@@ -94,29 +133,43 @@ def operation_phase():
                 else:
                     print("[INVALID INPUT] Please try again..")   
             else:
-                INpacket = f"IN,{encryptedMsg}"
+                INpacket = f"IN,{msg}"
                 s.send(INpacket.encode())
-                decryptedReply = cipher.iv + cipher.decrypt(process_packet_string(s.recv(2048)))
-                if decryptedReply[0] == "EE":
-                    if decryptedReply[1] == "InputError":
-                        print(decryptedReply[2])
-                elif decryptedReply[0] == "GR" or decryptedReply[0] == "IR" or decryptedReply[0] == "LR" or decryptedReply[0] == "TR" or decryptedReply[0] == "RR" or decryptedReply[0] == "PR":
-                    print(decryptedReply[1])
+                reply = process_packet_string(s.recv(2048))
+                if reply[0] == "EE":
+                    if reply[1] == "InputError":
+                        print(reply[2])
+                elif reply[0] == "GR" or reply[0] == "IR" or reply[0] == "LR" or reply[0] == "TR" or reply[0] == "RR" or reply[0] == "PR":
+                    print(reply[1])
                     
+
+def encryptMsg(msg, key) -> bytes:
+    cipher = DES.new(key, DES.MODE_CBC)
+    iv = cipher.iv
+    encryptedMsg = cipher.encrypt(pad(msg.encode(), DES.block_size))
+    return encryptedMsg, iv
+
+def decryptMsg(encryptedMsg, key, iv) -> str:
+    decryptionCipher = DES.new(key, DES.MODE_CBC, iv)
+    decryptedMsg = unpad(decryptionCipher.decrypt(encryptedMsg), DES.block_size).decode()
+    return decryptedMsg
 
 
 def process_packet_string(packet_string) -> list:
-    temp = packet_string.decode().split(",")
+    try:
+        temp = packet_string.decode().split(",")
+    except:
+        temp = packet_string.split(",")
     packet = []
     for i in temp:
         packet.append(i.strip())
     return packet
 
 
+
 def main():
     initConnection("localhost", 6666)
     setUpPhase()
-    operation_phase()
     s.close()
     
 if __name__ == "__main__":
