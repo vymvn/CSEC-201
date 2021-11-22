@@ -47,8 +47,6 @@ class clientThread(threading.Thread):
                     encryptedPacket = self.socket.recv(1024)
                     iv = self.socket.recv(500)
                     received = process_packet_string(decryptMsg(encryptedPacket, sessionKey, iv))
-                    print(encryptedPacket)
-                    print(received)
                     # processing the message and choosing and appropriate response packet
                     if received[0] == "ED":
                         # Closing Phase
@@ -63,31 +61,48 @@ class clientThread(threading.Thread):
                                 response = "Good evening! How can i help you?"
                             else:
                                 response = GRrespones[random.randint(0, len(GRrespones) - 1)]
-                            GRpacket = f"GR, {response}"
-                            encryptedGRpacket, vi = encryptMsg(GRpacket, sessionKey)
-                            self.socket.send(encryptedGRpacket)
+                            packet = f"GR,{response}"
+                            encryptedPacket, vi = encryptMsg(packet, sessionKey)
+                            self.socket.send(encryptedPacket)
                             self.socket.send(vi)
                         elif "what" in received[1]:
-                            # query = received[1]
-                            # result = search(query, tld='com', lang='en', num=10, start=0, stop=None, pause=2.0) # This is for google packet
-                            self.socket.send(f"IR, it is...".encode())
+                            packet = f"IR,it is uhhhh"
+                            encryptedPacket, vi = encryptMsg(packet, sessionKey)
+                            self.socket.send(encryptedPacket)
+                            self.socket.send(vi)
                         
                         elif "where" in received[1]:
-                            self.socket.send(f"LR, well...did you try google maps? ".encode())
+                            # self.socket.send(f"LR, well...did you try google maps? ".encode())
+                            packet = f"LR,well...did you try google maps?"
+                            encryptedPacket, vi = encryptMsg(packet, sessionKey)
+                            self.socket.send(encryptedPacket)
+                            self.socket.send(vi)
 
                         elif "when" in received[1]:
-                            self.socket.send(f"TR, Around 5 mins after too late ".encode())
+                            packet = f"TR,Around 5 mins after too late "
+                            encryptedPacket, vi = encryptMsg(packet, sessionKey)
+                            self.socket.send(encryptedPacket)
+                            self.socket.send(vi)
 
                         elif "search" in received[1]:
                             query = received[1].lstrip('search')
                             result = search(query,tld='com', lang='en', num=10, start=0, stop=None, pause=2.0)
-                            self.socket.send(f"RR, {result}".encode())
+                            packet = f"RR,{result}"
+                            encryptedPacket, vi = encryptMsg(packet, sessionKey)
+                            self.socket.send(encryptedPacket)
+                            self.socket.send(vi)
 
                         elif "permission" in received[1]:
-                            self.socket.send(f"PR, Permission Granted, Godspeed ")
+                            packet = f"PR,Permission Granted"
+                            encryptedPacket, vi = encryptMsg(packet, sessionKey)
+                            self.socket.send(encryptedPacket)
+                            self.socket.send(vi)
                             
                         else:
-                            self.socket.send(f"EE, InputError, Sorry i did not get that. Ask me something or type \"bye\" to quit.".encode())
+                            packet = f"EE, InputError, Sorry i did not get that. Ask me something or type \"bye\" to quit."
+                            encryptedPacket, vi = encryptMsg(packet, sessionKey)
+                            self.socket.send(encryptedPacket)
+                            self.socket.send(vi)
                 # Disconnecting after receiving closing packet
                 self.socket.close()
                 print(f"{self.address} Disconnected")
@@ -108,7 +123,6 @@ class clientThread(threading.Thread):
         GRrespones = ["Hello! How can i help you?", "Hi there! What can i do for you?", "Greetings! Ask me something"]
         while True:
             received = process_packet_string(self.socket.recv(100))
-            print(received)
             # processing the message and choosing and appropriate response packet
             if received[0] == "ED":
                 # Closing Phase
