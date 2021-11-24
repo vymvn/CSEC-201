@@ -7,6 +7,11 @@ import random, string
 from googlesearch import search
 from rsa.key import PublicKey
 
+""" Homework2 - ChatBot application
+
+By:
+    Adi, Ayman, Mohammed
+    """
 
 class clientThread(threading.Thread):
     """ Thread that handles a single client
