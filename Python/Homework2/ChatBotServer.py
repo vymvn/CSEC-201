@@ -78,7 +78,12 @@ class clientThread(threading.Thread):
                             self.socket.send(vi)
 
                         elif "when" in received[1]:
-                            packet = f"TR,Around 5 mins after too late "
+                            question = received[1].lstrip("when")
+                            if "open" in question:
+                                answer = "We are open from 9AM to 5PM, Sunday to Thursday."
+                            elif "close" in question:
+                                answer = "We are closed on weekends (Fridays and Saturdays)"
+                            packet = f"TR,{answer}"
                             encryptedPacket, vi = encryptMsg(packet, sessionKey)
                             self.socket.send(encryptedPacket)
                             self.socket.send(vi)
@@ -139,15 +144,21 @@ class clientThread(threading.Thread):
                         
                     self.socket.send(f"GR, {response}".encode())
                 elif "what" in received[1]:
-                    # query = received[1]
-                    # result = search(query, tld='com', lang='en', num=10, start=0, stop=None, pause=2.0) # This is for google packet
                     self.socket.send(f"IR, it is...".encode())
                 
                 elif "where" in received[1]:
-                    self.socket.send(f"LR, well...did you try google maps? ".encode())
+                    self.socket.send(f"LR,well...did you try google maps? ".encode())
 
                 elif "when" in received[1]:
-                    self.socket.send(f"TR, Around 5 mins after too late ".encode())
+                    question = received[1].lstrip("when")
+                    if "open" in question:
+                        answer = "We are open from 9AM to 5PM, Sunday to Thursday."
+                    elif "close" in question:
+                        answer = "We are closed on weekends (Fridays and Saturdays)"
+                    else:
+                        answer = "I do not have that information"
+                    packet = f"TR,{answer}"
+                    self.socket.send(packet.encode())
 
                 elif "search" in received[1]:
                     query = received[1].lstrip('search')
@@ -158,7 +169,7 @@ class clientThread(threading.Thread):
                     self.socket.send(f"PR, Permission Granted, Godspeed ")
                     
                 else:
-                    self.socket.send(f"EE, InputError, Sorry i did not get that. Ask me something or type \"bye\" to quit.".encode())
+                    self.socket.send(f"EE,InputError,Sorry i did not get that. Ask me something or type \"end\" to quit.".encode())
         # Disconnecting after receiving closing packet
         self.socket.close()
         print(f"{self.address} Disconnected")

@@ -1,8 +1,11 @@
 import socket
 import string
+from threading import Thread
+import threading
 from Crypto.Cipher import DES
 from Crypto.Util.Padding import pad, unpad
 import rsa
+import time
 
 # ChatBot information
 VERSION = "v1.0"
@@ -48,6 +51,10 @@ def setUpPhase():
             global algo
             algo = input("Please choose encryption algorithm (DES/Auth)\n>> ")
             if algo.upper() == "DES":
+                global doneEncryption
+                doneEncryption = False
+                loadThread = threading.Thread(target=animate)
+                loadThread.start()
                 (pubKey, privKey) = rsa.newkeys(2048)
                 pubKey_pkcs1 = pubKey.save_pkcs1(format='PEM')
                 encryption_packet1 = f"EC,DES"
@@ -55,11 +62,11 @@ def setUpPhase():
                 s.send(encryption_packet1.encode())
                 s.send(encryption_packet2)
                 SKpacket = process_packet_string(s.recv(1024))
+                doneEncryption = True
                 if SKpacket[0] == "SK":
                     SK = s.recv(1024)
                     global sessionKey
                     sessionKey = rsa.decrypt(SK, privKey)
-                    print("Session key received successfully!")
                 break
             elif algo.lower() == "auth":
                 username = input("Username: ")
@@ -70,10 +77,12 @@ def setUpPhase():
             else:
                 print("[INVALID INPUT] Please try again..")
     confirmation_packet = process_packet_string(s.recv(1024))
-    if confirmation_packet[0] == "CC":   
+    if confirmation_packet[0] == "CC":
+        loadThread.join()
         print(f"Welcome to ChatBot {VERSION}")
-        if algo.upper() == "DES":
-            encrypted_operation_phase() # starting encrypted operation phase
+        if encryption_type == 1:
+            if algo.upper() == "DES":
+                encrypted_operation_phase() # starting encrypted operation phase
         else:
             operation_phase() # starting operation phase
     elif confirmation_packet[0] == "EE":
@@ -112,9 +121,9 @@ def encrypted_operation_phase():
                 responsePacket = process_packet_string(decryptedReply)
                 if responsePacket[0] == "EE":
                     if responsePacket[1] == "InputError":
-                        print(responsePacket[2])
+                        print(f"[ChatBot]: {responsePacket[2]}")
                 elif responsePacket[0] == "GR" or responsePacket[0] == "IR" or responsePacket[0] == "LR" or responsePacket[0] == "TR" or responsePacket[0] == "RR" or responsePacket[0] == "PR":
-                    print(responsePacket[1])
+                    print(f"[ChatBot]: {responsePacket[1]}")
 
 def operation_phase():
     # getting user messages 
@@ -138,19 +147,19 @@ def operation_phase():
                 reply = process_packet_string(s.recv(2048))
                 if reply[0] == "EE":
                     if reply[1] == "InputError":
-                        print(reply[2])
+                        print(f"[ChatBot]: {reply[2]}")
                 elif reply[0] == "GR" or reply[0] == "IR" or reply[0] == "LR" or reply[0] == "TR" or reply[0] == "RR" or reply[0] == "PR":
-                    print(reply[1])
+                    print(f"[ChatBot]: {reply[1]}")
                     
 
 def encryptMsg(msg, key) -> bytes:
-    cipher = DES.new(key, DES.MODE_CBC)
-    iv = cipher.iv
+    cipher = DES.new(key, DES.MODE_CBC) # making encryption cipher with session key
+    iv = cipher.iv 
     encryptedMsg = cipher.encrypt(pad(msg.encode(), DES.block_size))
     return encryptedMsg, iv
 
 def decryptMsg(encryptedMsg, key, iv) -> str:
-    decryptionCipher = DES.new(key, DES.MODE_CBC, iv)
+    decryptionCipher = DES.new(key, DES.MODE_CBC, iv) # making decryption cipher with session key
     decryptedMsg = unpad(decryptionCipher.decrypt(encryptedMsg), DES.block_size).decode()
     return decryptedMsg
 
@@ -165,7 +174,17 @@ def process_packet_string(packet_string) -> list:
         packet.append(i.strip())
     return packet
 
-
+def animate():
+    while doneEncryption == False:
+        print('\rEncrypting your connection.. |', end="")
+        time.sleep(0.1)
+        print('\rEncrypting your connection.. /', end="")
+        time.sleep(0.1)
+        print('\rEncrypting your connection.. -', end="")
+        time.sleep(0.1)
+        print('\rEncrypting your connection.. \\', end="")
+        time.sleep(0.1)
+    print('\rConnection encrypted!                             \n', end="")
 
 def main():
     initConnection("localhost", 6666)
