@@ -16,10 +16,10 @@ class readFileThread(threading.Thread):
             files.sort()
 
             
-            for root, dirnames, filenames in os.walk("\\CSEC-201\\CSEC-201"):
+            for dirpath, dirnames, filenames in os.walk("C:\\Users\\Ayman\\Dropbox\\Uni\\Year2_Fall\\CSEC-201\\CSEC201PyScripts"):
                 filenames.sort()
                 if filenames == files:
-                    print("Found in: " + root)
+                    print("Found in: " + dirpath)
 
 
 
@@ -31,5 +31,5 @@ class readFileThread(threading.Thread):
             #         if sub_dir_content == files:
             #             print(i.name)                    
 
-testthread = readFileThread("\Quiz1\Info.txt")
+testthread = readFileThread("Quiz1\Info.txt")
 testthread.start()

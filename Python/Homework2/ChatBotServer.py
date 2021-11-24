@@ -3,8 +3,9 @@ from Crypto.Cipher import DES
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
 import rsa
-import random
+import random, string
 from googlesearch import search
+from rsa.key import PublicKey
 
 
 class clientThread(threading.Thread):
