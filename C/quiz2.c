@@ -59,9 +59,14 @@ int main()
     int temp[5];
     for (int i = 0; i < 5; i++)
     {
+	if (arrayA[i] % 2 != 0)
+	{
+	
         temp[i] = arrayA[i];
         arrayA[i] = arrayB[i];
         arrayB[i] = temp[i];
+    
+	}
     }
 
     printf("\nafter swap:\nArrayA: ");
