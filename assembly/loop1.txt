@@ -1,0 +1,29 @@
+section .data
+lpCnt dq 15
+sum dq 0
+msg db 0xA
+
+section .text
+global _start
+_start:
+mov rcx, qword [lpCnt] 	; loop counter
+mov rax, 1 		; odd integer counter
+sumLoop:
+add qword [sum], rax 	; sum current odd integer
+add rax, 2 			; set next odd integer
+dec rcx 			; decrement loop counter
+cmp rcx, 0
+jne sumLoop
+
+
+; Another solution
+
+mov rcx, qword [lpCnt] 	; loop counter
+mov rax, 1 
+sumLoop:
+add qword [sum], rax 	; sum current odd integer
+add rax, 2 			; set next odd integer
+loop sumLoop		; loop decrement rcx then compare with 0 and jump to label if rcx !=0
+
+
+;write printing sum here
