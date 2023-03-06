@@ -1,5 +1,4 @@
 ; Homework 3 - Caeser cipher encryption in assembly
-; Authors: Ayman Yousef, Mohammed Al Shar'
 
 
 global _start

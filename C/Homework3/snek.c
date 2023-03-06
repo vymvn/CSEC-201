@@ -3,7 +3,7 @@
 #include <time.h>
 
 /*
-    Homework 3 - Snakes and ladders CLI game By Ayman Yousef and Mohammed AL Shar'
+    Homework 3 - Snakes and ladders CLI game'
 */
 
 

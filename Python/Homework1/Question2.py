@@ -65,18 +65,6 @@ def crack_zip(world_list):
         print("No password found")
 
 
-# def animate():
-#     while done == False:
-#         print('\rScanning drive |', end="")
-#         time.sleep(0.1)
-#         print('\rScanning drive /', end="")
-#         time.sleep(0.1)
-#         print('\rScanning drive -', end="")
-#         time.sleep(0.1)
-#         print('\rScanning drive \\', end="")
-#         time.sleep(0.1)
-#     print('\rDone!     ', end="")
-
 
 
 
@@ -105,7 +93,6 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 def main():
     # global done
     # done = False
-    # animate()
     password_list = findPasswordTextFile()
     # done = True
     crack_zip(password_list)
